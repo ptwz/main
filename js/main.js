@@ -19193,9 +19193,9 @@ function swapFigure(figa,figb){
         figb = tmp;
         swap_ab = true;
     }
-    // Now find non-movements to left
-    while ( ( figa > 0 ) && ( "curveTo" in figures[figa] )) figa--;
-    while ( ( figb < figures.length ) && ( "curveTo" in figures[figb] )) figb++;
+    // Now find the actual aresti symbols to the left/right.
+    while ( ( figa > 0 ) && !( "aresti" in figures[figa] )) figa--;
+    while ( ( figb < figures.length ) && !( "aresti" in figures[figb] )) figb++;
 
     var tmp = figures[figa].string;
     updateSequence(figa, figures[figb].string, true);

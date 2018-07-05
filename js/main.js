@@ -5430,6 +5430,9 @@ function addEventListeners () {
   document.getElementById('figExitButton').addEventListener('click', clickButton, false);
   // document.getElementById('comments').addEventListener('change', updateFigureComments);
   document.getElementById('comments').addEventListener('input', updateFigureComments);
+  document.getElementById('moveFwd').addEventListener('click', clickButton, false);
+  document.getElementById('moveBack').addEventListener('click', clickButton, false);
+
     
   // figure selector
   document.getElementById('manual.html_the_figure_chooser').addEventListener('mousedown', function(){
@@ -5904,6 +5907,8 @@ function clickButton () {
       // activate the correct click action
       switch (e.id) {
         // temporary depression buttons
+        case 'moveFwd':
+        case 'moveBack':
         case 'deleteFig':
         case 'flipYAxis':
         case 'magMin':
@@ -5956,6 +5961,20 @@ function clickButton () {
       }
       // don't continue. Not a figure function
       return;
+    case 'moveFwd':
+        var a = parseInt(selectedFigure.id);
+        var b = a+1;
+        if (b >= figures.length)
+            break;
+        swapFigure(a,b);
+      break;
+    case 'moveBack':
+        var a = parseInt(selectedFigure.id);
+        var b = a-1;
+        if (b < 0)
+            break;
+        swapFigure(a,b);
+      break;
     case 'deleteFig':
       if (selectedFigure.id !== null) {
         var flipY = activeSequence.text.replace(regexComments, '').match(regexFlipYAxis);
@@ -9012,6 +9031,8 @@ function loadRules() {
   return true;
 }
 
+// Modif GG v2016.1.4 Start
+
 // write_log_fig() Writes fig content to console log. This is just for debug.
 function write_log_fig() {
   newK_string = '' ;
@@ -9359,56 +9380,53 @@ function checkRules () {
                 forElement = userText.forElement + ruleSplit[1];
               }
               // Apply conversions to the Aresti number before checking the rule
-              if (checkRule[rule]) { // make sure rule was defined
-	              if (checkRule[rule].conv) {
-	                var conversion = checkRule[rule].conv;
-	                log.push ('Apply: ' + checkRule[rule].conv);
-	                logLine = 'Converted: ' + check.join('') + ' => ';
-	                for (var l = 0; l < checkConv[conversion].length; l++) {
-	                  for (var m = 0; m < check.length; m++) {
-	                    if (!check[m].match(/[ ,;]/)) {
-	                      check[m] = check[m].replace(checkConv[conversion][l].regex,
-	                      checkConv[conversion][l].replace);
-	                    }
-	                  }
-	                }
-	                checkLine = check.join('');
-	
-	                log.push (logLine + checkLine);
-	              }
-	              if (checkRule[rule].regex) {
-	                if (checkLine.match(checkRule[rule].regex)) {
-	                  checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
-	                  log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
-	                }
-	              } else if (checkRule[rule].less) {
-	                var sum = 0;
-	                for (var l = check.length - 1; l >= 0; l--) {
-	                  if (check[l].match(/^[0-9]/)) {
-	                    sum += parseInt (check[l]);
-	                  }
-	                  if ((check[l] == ' ') || (l == 0)) {
-	                    if (sum >= parseInt (checkRule[rule].less)) {
-	                      checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
-	                      log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
-	                    }
-	                    sum = 0;
-	                  }
-	                }
-	              } else if (checkRule[rule].totalLess) {
-	                var sum = 0;
-	                for (var l = check.length - 1; l >= 0; l--) {
-	                  if (check[l].match(/^[0-9]/)) {
-	                    sum += parseInt (check[l]);
-	                  }
-	                }
-	                if (sum >= parseInt (checkRule[rule].totalLess)) {
-	                  checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
-	                  log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
-	                }
-	              }
-							} else console.log ("Referenced rule \"" + rule +
-								"\" does not exist");
+              if (checkRule[rule].conv) {
+                var conversion = checkRule[rule].conv;
+                log.push ('Apply: ' + checkRule[rule].conv);
+                logLine = 'Converted: ' + check.join('') + ' => ';
+                for (var l = 0; l < checkConv[conversion].length; l++) {
+                  for (var m = 0; m < check.length; m++) {
+                    if (!check[m].match(/[ ,;]/)) {
+                      check[m] = check[m].replace(checkConv[conversion][l].regex,
+                      checkConv[conversion][l].replace);
+                    }
+                  }
+                }
+                checkLine = check.join('');
+
+                log.push (logLine + checkLine);
+              }
+              if (checkRule[rule].regex) {
+                if (checkLine.match(checkRule[rule].regex)) {
+                  checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
+                  log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
+                }
+              } else if (checkRule[rule].less) {
+                var sum = 0;
+                for (var l = check.length - 1; l >= 0; l--) {
+                  if (check[l].match(/^[0-9]/)) {
+                    sum += parseInt (check[l]);
+                  }
+                  if ((check[l] == ' ') || (l == 0)) {
+                    if (sum >= parseInt (checkRule[rule].less)) {
+                      checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
+                      log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
+                    }
+                    sum = 0;
+                  }
+                }
+              } else if (checkRule[rule].totalLess) {
+                var sum = 0;
+                for (var l = check.length - 1; l >= 0; l--) {
+                  if (check[l].match(/^[0-9]/)) {
+                    sum += parseInt (check[l]);
+                  }
+                }
+                if (sum >= parseInt (checkRule[rule].totalLess)) {
+                  checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
+                  log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
+                }
+              }
               
             }
             // Check default rules when applicable
@@ -11342,7 +11360,7 @@ function grabFigure(evt) {
         'margin-top: ' + (main.offsetTop + main.parentNode.offsetTop) + 'px');
       document.getElementById ('leftBlockTabSelector').setAttribute ('style',
         'top: ' + (main.offsetTop + main.parentNode.offsetTop) + 'px');
-      main.style.top = (0-main.parentNode.offsetTop) + 'px';
+      main.setAttribute ('style', 'top: ' + (0-main.parentNode.offsetTop) + 'px;');
 
     }
     
@@ -11727,7 +11745,7 @@ function Drop(evt) {
     }
   }
 
-	document.getElementById('main').style.top = '';
+	document.getElementById('main').style = '';
   //if (platform.touch) evt.preventDefault();
 
   // turn the pointer-events back on, so we can grab this item later
@@ -19152,6 +19170,40 @@ function updateXYFlip (m, n) {
     }
     updateSequenceText (text);
   }
+}
+
+// Swaps two figures in the sequence, they are specified by their respective 
+// ids.
+function swapFigure(figa,figb){
+    var swap_ab = false;
+    if ( (figa<0) || (figa>=figures.length) ){
+        console.log("Out of bounds "+i);
+        return;
+    }
+
+    if ( (figb<0) || (figb>=figures.length) ){
+        console.log("Out of bounds "+i);
+        return;
+    }
+    // Make sure we swap the appropriate elements not movements,
+    // therefore first order figa < figb
+    if ( figa > figb ) {
+        var tmp = figa;
+        figa = figb;
+        figb = tmp;
+        swap_ab = true;
+    }
+    // Now find the actual aresti symbols to the left/right.
+    while ( ( figa > 0 ) && !( "aresti" in figures[figa] )) figa--;
+    while ( ( figb < figures.length ) && !( "aresti" in figures[figb] )) figb++;
+
+    var tmp = figures[figa].string;
+    updateSequence(figa, figures[figb].string, true);
+    updateSequence(figb, tmp, true);
+    if (swap_ab)
+        selectFigure(figa);
+    else
+        selectFigure(figb);
 }
 
 // parseSequence parses the sequence character string

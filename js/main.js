@@ -5973,7 +5973,7 @@ function clickButton () {
         if (current.start == 0)
             break;
         var prev = getGroup(current.start - 1);
-        swapFigures(prev, current);
+        swapFigures(current, prev);
       break;
     case 'deleteFig':
       if (selectedFigure.id !== null) {
@@ -19188,6 +19188,8 @@ function getGroup(pos){
 // A group includes all figure elements like the aresti symbol (the figure itself)
 // and also movements, comments, etc.
 function swapFigures(figa,figb){
+    var new_selected = null;
+
     if (figa.end === figb.end)
         return;
 
@@ -19222,6 +19224,8 @@ function swapFigures(figa,figb){
         tmp.push(figures[i]);
         console.log(figures[i].string);
         }
+    if (swap_ab) 
+        new_selected = tmp.length-1;
     console.log("---2----");
     for (var i = figa.end+1; i < figb.start; i++){
         tmp.push(figures[i]);
@@ -19232,6 +19236,8 @@ function swapFigures(figa,figb){
         tmp.push(figures[i]);
         console.log(figures[i].string);
         }
+    if (!swap_ab) 
+        new_selected = tmp.length-1;
     console.log("---4----");
     for (var i = figb.end+1; i < figures.length; i++){
         tmp.push(figures[i]);
@@ -19247,12 +19253,8 @@ function swapFigures(figa,figb){
     checkSequenceChanged(true);
     //updateSequence(figa, figures[figb].string, true);
     //updateSequence(figb, tmp, true);
-    /*
-    if (swap_ab)
-        selectFigure(figb.end);
-    else
-        selectFigure(figa.end);
-    */
+
+    selectFigure(new_selected);
 }
 
 // parseSequence parses the sequence character string

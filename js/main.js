@@ -5962,18 +5962,18 @@ function clickButton () {
       // don't continue. Not a figure function
       return;
     case 'moveFwd':
-        var a = parseInt(selectedFigure.id);
-        var b = a+1;
-        if (b >= figures.length)
+        var current = getGroup(parseInt(selectedFigure.id));
+        var next = getGroup(current.end + 1);
+        if (next.end >= figures.length)
             break;
-        swapFigure(a,b);
+        swapFigures(current, next);
       break;
     case 'moveBack':
-        var a = parseInt(selectedFigure.id);
-        var b = a-1;
-        if (b < 0)
+        var current = getGroup(parseInt(selectedFigure.id));
+        if (current.start == 0)
             break;
-        swapFigure(a,b);
+        var prev = getGroup(current.start - 1);
+        swapFigures(prev, current);
       break;
     case 'deleteFig':
       if (selectedFigure.id !== null) {
@@ -19172,34 +19172,78 @@ function updateXYFlip (m, n) {
   }
 }
 
-// Swaps two figures in the sequence, they are specified by their respective 
-// ids.
-function swapFigure(figa,figb){
+function getGroup(pos){
+    var start = pos;
+    var end = null;
+    // Now find the actual aresti symbols to the left/right.
+    while ( ( start > 0 ) && !( (start>1) && ("aresti" in figures[start-1]) ) ) start--;
+    end = start;
+    while ( ( end < figures.length ) && !( "aresti" in figures[end]) ) end++;
+    var r = {'start':start, 'end':end};
+    return r;
+}
+
+// Swaps two (groups) figures in the sequence, they are specified by their respective 
+// ranges, which can be obtained using getGroup.
+// A group includes all figure elements like the aresti symbol (the figure itself)
+// and also movements, comments, etc.
+function swapFigures(figa,figb){
     var swap_ab = false;
-    if ( (figa<0) || (figa>=figures.length) ){
+    if ( (figa.start<0) || (figa.end>=figures.length) ){
         console.log("Out of bounds "+i);
         return;
     }
 
-    if ( (figb<0) || (figb>=figures.length) ){
+    if ( (figb.end<0) || (figb.end>=figures.length) ){
         console.log("Out of bounds "+i);
         return;
     }
     // Make sure we swap the appropriate elements not movements,
     // therefore first order figa < figb
-    if ( figa > figb ) {
+    if ( figa.start > figb.start ) {
         var tmp = figa;
         figa = figb;
         figb = tmp;
         swap_ab = true;
     }
-    // Now find the actual aresti symbols to the left/right.
-    while ( ( figa > 0 ) && !( "aresti" in figures[figa] )) figa--;
-    while ( ( figb < figures.length ) && !( "aresti" in figures[figb] )) figb++;
 
-    var tmp = figures[figa].string;
-    updateSequence(figa, figures[figb].string, true);
-    updateSequence(figb, tmp, true);
+    var tmp = [];
+    // Now splice new sequence
+    console.log("---0----");
+    for (var i = 0; i < figa.start; i++){
+        tmp.push(figures[i]);
+        console.log(figures[i].string);
+        }
+    console.log("---1----");
+    for (var i = figb.start; i <= figb.end; i++){
+        tmp.push(figures[i]);
+        console.log(figures[i].string);
+        }
+    console.log("---2----");
+    for (var i = figa.end+1; i < figb.start; i++){
+        tmp.push(figures[i]);
+        console.log(figures[i].string);
+        }
+    console.log("---3----");
+    for (var i = figa.start; i <= figa.end; i++){
+        tmp.push(figures[i]);
+        console.log(figures[i].string);
+        }
+    console.log("---4----");
+    for (var i = figb.end+1; i < figures.length; i++){
+        tmp.push(figures[i]);
+        console.log(figures[i].string);
+        }
+
+    var newSequence = "";
+    for (var i = 0; i < tmp.length; i++){
+        newSequence = newSequence.concat(tmp[i].string, " ");
+        }
+    
+    sequenceText.innerText = newSequence;
+    checkSequenceChanged(true);
+    //updateSequence(figa, figures[figb].string, true);
+    //updateSequence(figb, tmp, true);
     if (swap_ab)
         selectFigure(figa);
     else

@@ -5430,9 +5430,6 @@ function addEventListeners () {
   document.getElementById('figExitButton').addEventListener('click', clickButton, false);
   // document.getElementById('comments').addEventListener('change', updateFigureComments);
   document.getElementById('comments').addEventListener('input', updateFigureComments);
-  document.getElementById('moveFwd').addEventListener('click', clickButton, false);
-  document.getElementById('moveBack').addEventListener('click', clickButton, false);
-
     
   // figure selector
   document.getElementById('manual.html_the_figure_chooser').addEventListener('mousedown', function(){
@@ -5907,8 +5904,6 @@ function clickButton () {
       // activate the correct click action
       switch (e.id) {
         // temporary depression buttons
-        case 'moveFwd':
-        case 'moveBack':
         case 'deleteFig':
         case 'flipYAxis':
         case 'magMin':
@@ -5961,20 +5956,6 @@ function clickButton () {
       }
       // don't continue. Not a figure function
       return;
-    case 'moveFwd':
-        var a = parseInt(selectedFigure.id);
-        var b = a+1;
-        if (b >= figures.length)
-            break;
-        swapFigure(a,b);
-      break;
-    case 'moveBack':
-        var a = parseInt(selectedFigure.id);
-        var b = a-1;
-        if (b < 0)
-            break;
-        swapFigure(a,b);
-      break;
     case 'deleteFig':
       if (selectedFigure.id !== null) {
         var flipY = activeSequence.text.replace(regexComments, '').match(regexFlipYAxis);
@@ -9031,8 +9012,6 @@ function loadRules() {
   return true;
 }
 
-// Modif GG v2016.1.4 Start
-
 // write_log_fig() Writes fig content to console log. This is just for debug.
 function write_log_fig() {
   newK_string = '' ;
@@ -11360,7 +11339,7 @@ function grabFigure(evt) {
         'margin-top: ' + (main.offsetTop + main.parentNode.offsetTop) + 'px');
       document.getElementById ('leftBlockTabSelector').setAttribute ('style',
         'top: ' + (main.offsetTop + main.parentNode.offsetTop) + 'px');
-      main.setAttribute ('style', 'top: ' + (0-main.parentNode.offsetTop) + 'px;');
+      main.style.top = (0-main.parentNode.offsetTop) + 'px';
 
     }
     
@@ -11745,7 +11724,7 @@ function Drop(evt) {
     }
   }
 
-	document.getElementById('main').style = '';
+	document.getElementById('main').style.top = '';
   //if (platform.touch) evt.preventDefault();
 
   // turn the pointer-events back on, so we can grab this item later

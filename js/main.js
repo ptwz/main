@@ -19173,7 +19173,7 @@ function getGroup(pos){
     var start = pos;
     var end = null;
     // Now find the actual aresti symbols to the left/right.
-    while ( ( start > 0 ) && !( (start>1) && ("aresti" in figures[start-1]) ) ) start--;
+    while ( ( start > 0 ) && !( "aresti" in figures[start-1] ) ) start--;
     end = start;
     while ( ( end < figures.length ) && !( "aresti" in figures[end]) ) end++;
     var r = {'start':start, 'end':end};
@@ -19185,6 +19185,9 @@ function getGroup(pos){
 // A group includes all figure elements like the aresti symbol (the figure itself)
 // and also movements, comments, etc.
 function swapFigures(figa,figb){
+    if (figa.end === figb.end)
+        return;
+
     var swap_ab = false;
     if ( (figa.start<0) || (figa.end>=figures.length) ){
         console.log("Out of bounds "+i);
@@ -19241,10 +19244,12 @@ function swapFigures(figa,figb){
     checkSequenceChanged(true);
     //updateSequence(figa, figures[figb].string, true);
     //updateSequence(figb, tmp, true);
+    /*
     if (swap_ab)
-        selectFigure(figa);
+        selectFigure(figb.end);
     else
-        selectFigure(figb);
+        selectFigure(figa.end);
+    */
 }
 
 // parseSequence parses the sequence character string

@@ -11279,6 +11279,11 @@ function grabFigure(evt) {
     selectedFigure.diagonal = Math.sqrt (
       Math.pow (selectedFigure.width,2) + Math.pow (selectedFigure.height, 2));
 
+    // grab rearrange
+  } else if (evt.target.id === 'rearrange') {
+    dragTarget = evt.target;
+    // TODO make it work
+    
     // grab full sequence figures
   } else if (evt.target.parentNode.id.match (/^figure[0-9]/)) {
     if (figures[evt.target.parentNode.id.replace('figure', '')].draggable) {
@@ -11331,7 +11336,7 @@ function grabFigure(evt) {
 
     // move this element to the "top" of the display, so it is
     // always over other elements
-    if (!dragTarget.id.match (/^(.*-handle|magnifier)$/)) {
+    if (!dragTarget.id.match (/^(.*-handle|magnifier|rearrange)$/)) {
       dragTarget.parentNode.appendChild( dragTarget );
     }
 
@@ -11374,7 +11379,7 @@ function grabFigure(evt) {
     sequenceText.blur();
 
     // the dragTarget id is the new selectedFigure.id
-    if (!dragTarget.id.match (/^(.*-handle|magnifier)$/)) {
+    if (!dragTarget.id.match (/^(.*-handle|magnifier|rearrange)$/)) {
       selectFigure(dragTarget.id.replace('figure', ''));
     }
 
@@ -11438,7 +11443,7 @@ function setFigureSelected (figNr) {
 					nodes[i].setAttribute ('style', s);
 				}
 				if (nodes[i].id &&
-					nodes[i].id.match (/^(.*-handle|magnifier|selectedFigureBox)$/)) {
+					nodes[i].id.match (/^(.*-handle|rearrange|magnifier|selectedFigureBox)$/)) {
 					selFig.removeChild (nodes[i]);
 				}
 			}
@@ -11495,7 +11500,17 @@ function setFigureSelected (figNr) {
             cursor: 'move',
             href: 'img/magnifier.svg'}, el);
         }
-
+        // Add rearrangement arrows
+        if (showHandles) {
+         drawImage( {
+            x: selectedFigure.x - 22,
+            y: selectedFigure.y - 9,
+            width: 28 * svgScale,
+            height: 28 * svgScale,
+            'id': 'rearrange',
+            cursor: 'move',
+            href: 'img/rearrange.svg'}, el);
+        }
       }
     }
   } else {
@@ -11644,6 +11659,54 @@ function Drag (evt) {
           cursor: 'move',
           href: 'img/magnifier.svg'}, dragTarget.parentNode);
       }
+    } else if (dragTarget.id === 'rearrange') {
+      
+      /** dragging rearrange */
+            
+      // TODO find out where we are and what we could drop the element
+      //      into
+      // TrueCoords Koordinaten der Maus
+      // GrabPoint Der punkt an dem gegriffen wurde
+      var find_middle = function(figs) {
+        var n = 0;
+        var x = 0, y = 0;
+        for ( var i = 0 ; i < figs.length ; i++){
+                if (SVGRoot.getElementById('figure' + figs[i])) {
+                        n++;
+                        var bBox = SVGRoot.getElementById('figure'+figs[i]).getBoundingClientRect();
+                        x += (bBox.left + bBox.right) / 2;
+                        y += (bBox.top + bBox.bottom) / 2;
+                }
+            return { 'x':x/n , 'y':y/n };
+            };
+         };
+
+      // Finde den Zwischenraum, in den es am Besten passen würde..
+      var min_dist = 99999999999;
+      var min_fig = -1;
+
+      for (var i = 0 ; i <= figures.length; i++){
+        var group = getGroup(i);
+        i = group.end + 1;
+        if ( i > figures.length) 
+            break;
+        var next_group = getGroup(i);
+
+        console.log( group );
+        // Find gaps between figures, assuming the "end" is
+        // always the actual figure symbol
+        var middle = find_middle( [group.end, next_group.end] );
+        var dx = TrueCoords.x - middle.x;
+        var dy = TrueCoords.y - middle.y;
+        // Find the middle
+        var d = Math.sqrt(dx*dx + dy*dy); 
+        if (min_dist > d) {
+            min_dist = d;
+            min_fig = i;
+        console.log( figures[i].seqNr + " dx="+dx.toString()+" dy="+dy.toString());
+        }
+      }
+
     } else if (dragTarget.id === 'magnifier') {
       
       /** dragging magnifier */

@@ -148,6 +148,7 @@ var SVGRoot = null;
 var TrueCoords = null;
 var GrabPoint = null;
 var dragTarget = null;
+var dragDestination = null;
 // confirmFunction is used as a function reference of confirm dialog
 var confirmFunction;
 
@@ -11659,50 +11660,52 @@ function Drag (evt) {
     } else if (dragTarget.id === 'rearrange') {
       
       /** dragging rearrange */
-            
-      // TODO find out where we are and what we could drop the element
-      //      into
-      // TrueCoords Koordinaten der Maus
-      // GrabPoint Der punkt an dem gegriffen wurde
-      var find_middle = function(figs) {
-        var n = 0;
-        var x = 0, y = 0;
-        for ( var i = 0 ; i < figs.length ; i++){
-                if (SVGRoot.getElementById('figure' + figs[i])) {
-                        n++;
-                        var bBox = SVGRoot.getElementById('figure'+figs[i]).getBoundingClientRect();
-                        x += (bBox.left + bBox.right) / 2;
-                        y += (bBox.top + bBox.bottom) / 2;
-                }
-            return { 'x':x/n , 'y':y/n };
-            };
-         };
-
-      // Finde den Zwischenraum, in den es am Besten passen würde..
-      var min_dist = 99999999999;
-      var min_fig = -1;
-
-      for (var i = 0 ; i <= figures.length; i++){
+ 
+      for (var i = 0 ; i < figures.length; i++){
+        // Test if figure is hit
+        var fig = SVGRoot.getElementById('figure'+i);
+        if ( fig === null ) // Skip non drawing figures
+            continue;
+        var bBox = fig.getBoundingClientRect();
+        // If not hit, skip to next
+        if (!(     ( TrueCoords.x > bBox.left ) && ( TrueCoords.x < bBox.right ) 
+                && ( TrueCoords.y > bBox.top  ) && ( TrueCoords.y < bBox.bottom ) ) )
+            continue;
+        var middle_x = (bBox.left + bBox.right)/2;
+        
         var group = getGroup(i);
-        i = group.end + 1;
-        if ( i > figures.length) 
-            break;
-        var next_group = getGroup(i);
 
-        console.log( group );
-        // Find gaps between figures, assuming the "end" is
-        // always the actual figure symbol
-        var middle = find_middle( [group.end, next_group.end] );
-        var dx = TrueCoords.x - middle.x;
-        var dy = TrueCoords.y - middle.y;
-        // Find the middle
-        var d = Math.sqrt(dx*dx + dy*dy); 
-        if (min_dist > d) {
-            min_dist = d;
-            min_fig = i;
-        console.log( figures[i].seqNr + " dx="+dx.toString()+" dy="+dy.toString());
+        var to_left = true;
+        if ( ( i == group.end ) && (TrueCoords.x > middle_x) ) { 
+            // User wants to move right of current figure
+            to_left = false;
+        } else
+        {
+            // User wants to move before current figure
+            to_left = true;
         }
-      }
+        // Now decide, where the insert would take place considering flight direction
+        var before = true;
+        if (to_left)
+        {
+            if ( figures[group.end].exitDir < 180) {
+                before = true;
+            } else {
+                before = false;
+            }
+        } else {
+            if ( figures[group.end].exitDir < 180) {
+                before = false;
+            } else {
+                before = true;
+            }
+        }
+        // Now finally we know where to put it
+        if (before) 
+            dragDestination = group.start;
+        else
+            dragDestination = group.end+1;
+        }
 
     } else if (dragTarget.id === 'magnifier') {
       
@@ -11830,7 +11833,12 @@ function Drop(evt) {
     
     updateFigure();
     restoreViewBox();
-    
+  } else if (dragTarget.id === "rearrange") {
+    /** Drop a figure into a new place **/
+    var group = getGroup(selectedFigure.id);
+        
+    if (dragDestination !== null )
+            moveGroup(group, dragDestination);
   } else {
     
     /** dropping a complete figure */
@@ -11864,6 +11872,7 @@ function Drop(evt) {
   // set the global variable to null, so nothing will be dragged until
   // we grab the next element
   dragTarget = null;
+  dragDestination = null;
 
   //if (!platform.touch) sequenceText.focus();
 
@@ -19241,6 +19250,50 @@ function getGroup(pos){
     while ( ( end < figures.length ) && !( "aresti" in figures[end]) ) end++;
     var r = {'start':start, 'end':end};
     return r;
+}
+
+// Moves one figure (i.e. group) within the sequence, the source figure is specified as
+// a range, which can be obtained using getGroup.
+// A group includes all figure elements like the aresti symbol (the figure itself)
+// and also movements, comments, etc.
+// The parameter where specifies the figure (element) to put the figure behind
+function moveGroup(to_move, where){
+    var new_selected = null;
+
+    var tmp = [];
+    // Now splice new sequence
+    console.log(to_move);
+    console.log(dragDestination);
+    console.log("---1a----");
+    for (var i = 0; i <= figures.length; i++){
+        console.log(i);
+        if ( i === where ) {
+            console.log("---1b----");
+            for ( var j = to_move.start ; j <= to_move.end ; j++){
+                tmp.push(figures[j]);
+                console.log(figures[j].string);
+                }
+            new_selected = tmp.length-1;
+            console.log("---1c----");
+            }
+        if ( (i >= to_move.start) && ( i <= to_move.end ) ) {
+            console.log("skip");
+            continue;
+        }
+        if ( ! (i in figures) ) continue;
+        tmp.push(figures[i]);
+        console.log(figures[i].string);
+    }
+
+    var newSequence = "";
+    for (var i = 0; i < tmp.length; i++){
+        newSequence = newSequence.concat(tmp[i].string, " ");
+        }
+    
+    sequenceText.innerText = newSequence;
+    checkSequenceChanged(true);
+
+    selectFigure(new_selected);
 }
 
 // Swaps two (groups) figures in the sequence, they are specified by their respective 

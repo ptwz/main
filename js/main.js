@@ -149,6 +149,7 @@ var TrueCoords = null;
 var GrabPoint = null;
 var dragTarget = null;
 var dragDestination = null;
+var dragDestinationCircle = null;
 // confirmFunction is used as a function reference of confirm dialog
 var confirmFunction;
 
@@ -2869,7 +2870,7 @@ function makeFigStart (params) {
         'text-anchor':'middle'
       });
     }
-    // Make the marker
+    // Make the (start) marker
     pathsArray.push({
       'path': 'm -4,0 a4,4 0 1 1 0,0.01',
       'style':'blackfill',
@@ -11280,8 +11281,6 @@ function grabFigure(evt) {
     // grab rearrange
   } else if (evt.target.id === 'rearrange') {
     dragTarget = evt.target;
-    // TODO make it work
-    
     // grab full sequence figures
   } else if (evt.target.parentNode.id.match (/^figure[0-9]/)) {
     if (figures[evt.target.parentNode.id.replace('figure', '')].draggable) {
@@ -11660,6 +11659,11 @@ function Drag (evt) {
     } else if (dragTarget.id === 'rearrange') {
       
       /** dragging rearrange */
+      var x = TrueCoords.x - GrabPoint.x;
+      var y = TrueCoords.y - GrabPoint.y;
+      dragTarget.parentNode.setAttribute('transform',
+          'translate(' + x + ',' + y + ')');
+      var group = null;
  
       for (var i = 0 ; i < figures.length; i++){
         // Test if figure is hit
@@ -11672,8 +11676,9 @@ function Drag (evt) {
                 && ( TrueCoords.y > bBox.top  ) && ( TrueCoords.y < bBox.bottom ) ) )
             continue;
         var middle_x = (bBox.left + bBox.right)/2;
-        
-        var group = getGroup(i);
+        group = getGroup(i);
+        break;
+        }
 
         var to_left = true;
         if ( ( i == group.end ) && (TrueCoords.x > middle_x) ) { 
@@ -11705,7 +11710,17 @@ function Drag (evt) {
             dragDestination = group.start;
         else
             dragDestination = group.end+1;
+        // Move drag destination marker there, if applicable
+        if (dragDestinationCircle === null) {
+            dragDestinationCircle = document.createElementNS (svgNS, "circle");
+            dragDestinationCircle.setAttribute("r", 10);
         }
+
+        console.log(figures[dragDestination].startPos.x);
+        dragDestinationCircle.setAttribute("cx", figures[dragDestination].startPos.x );
+        dragDestinationCircle.setAttribute('style', 'blackfill');
+        dragDestinationCircle.setAttribute("cy", figures[dragDestination].startPos.y );
+        SVGRoot.appendChild(dragDestinationCircle);
 
     } else if (dragTarget.id === 'magnifier') {
       

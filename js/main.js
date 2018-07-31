@@ -1165,8 +1165,8 @@ var iosDragDropShim = { enableEnterLeave: true,
         new DragDrop(evt,el);
       } else if (iosDragDropShim.openaero) {
         if (el.classList.contains ('removeFigureButton')) {
+					// event handler is on button
           evt.preventDefault();
-          handleFreeRemove (evt, el);
           return false;
         } else if (el.classList.contains ('fuFigure') ||
           el.classList.contains ('fuFigureMulti') ||
@@ -5268,7 +5268,8 @@ function addEventListeners () {
   // drop any dragged object when releasing mouse anywhere
   if (platform.touch) {
     window.addEventListener ('touchend', Drop);    
-  } else window.addEventListener ('mouseup', Drop);
+  }
+  window.addEventListener ('mouseup', Drop);
   
   // menu
   document.getElementById('hamburgerMenu').addEventListener ('mousedown', menuActive);
@@ -5356,10 +5357,10 @@ function addEventListeners () {
   if (platform.touch) {
     document.getElementById('gridInfo').addEventListener ('touchstart', grabFigure);
     document.getElementById('gridInfo').addEventListener ('touchmove', Drag);
-  } else {
-	  document.getElementById('gridInfo').addEventListener ('mousedown', grabFigure);
-	  document.getElementById('gridInfo').addEventListener ('mousemove', Drag);
-	}
+  }
+  document.getElementById('gridInfo').addEventListener ('mousedown', grabFigure);
+  document.getElementById('gridInfo').addEventListener ('mousemove', Drag);
+  
   document.getElementById('gridColumns').addEventListener('change', updateGridColumns);
   document.getElementById('gridOrderBy').addEventListener('change', function(){selectForm('Grid');});
   document.getElementById('manual_html_grid_system').addEventListener('mousedown', function(){
@@ -10426,9 +10427,8 @@ function changeFigureGroup() {
           // which fires before mousedown
           if (platform.touch) {
             div.addEventListener ('touchstart', removeFromQueue);
-          } else {
-	          div.addEventListener ('mousedown', removeFromQueue);
-					}
+          }
+          div.addEventListener ('mousedown', removeFromQueue);
           inner.appendChild(div);
           // add the unknownFigureLetter where defined
           if (fig[i].unknownFigureLetter) {
@@ -11207,6 +11207,8 @@ function grabFigure(evt) {
   // disable when sequence locked
   if (document.getElementById ('lock_sequence').value) return;
   
+  evt.preventDefault();
+  
   // Put the coordinates of object evt in TrueCoords global.
   if (evt.changedTouches && evt.changedTouches[0] && ('pageX' in evt.changedTouches[0])) {
     TrueCoords.x = evt.changedTouches[0].pageX;
@@ -11342,8 +11344,8 @@ function grabFigure(evt) {
     //    2) allows us to find out where the dragged element is dropped (see Drop)
     dragTarget.setAttribute('pointer-events', 'none');
 
-    // enlarge svg to cover top and left
-    if (!platform.smallMobile) {
+    // enlarge svg to cover top and left, except on smallMobile and Grid
+    if (!platform.smallMobile && !(activeForm === 'Grid')) {
       var svgRect = svg.getBoundingClientRect();
       var w = parseInt(viewBox[2]) + parseInt(svgRect.left) +
 	      parseInt(dragTarget.scrollLeftSave);
@@ -11524,6 +11526,8 @@ function setFigureSelected (figNr) {
 function Drag (evt) {
 
   if (!dragTarget) return;
+  
+  evt.preventDefault();
   
   // don't drag figures when in grid view
   if ((activeForm === 'Grid') && !dragTarget.classList.contains  ('draggablePanel')) return;
@@ -11824,7 +11828,6 @@ function Drop(evt) {
   }
 
 	document.getElementById('main').style.top = '';
-  //if (platform.touch) evt.preventDefault();
 
   // turn the pointer-events back on, so we can grab this item later
   dragTarget.setAttribute('pointer-events', 'all');
@@ -11888,8 +11891,6 @@ function Drop(evt) {
   // we grab the next element
   dragTarget = null;
   dragDestination = null;
-
-  //if (!platform.touch) sequenceText.focus();
 
 }
 
@@ -12905,7 +12906,7 @@ function buildFuFiguresTab() {
       // When fu_figures has a value, the strings were already converted
       if ((fu_figures.value == '') && f.entryAxis == 'Y') {
         string = string.replace(regexSwitchDirY, '#').
-	        replace(regegSwitchDirX, userpat.switchDirY).
+	        replace(regexSwitchDirX, userpat.switchDirY).
 	        replace(/#/g, userpat.switchDirX);
       }
       // Handle the very special case where there's only an upright or
@@ -14059,10 +14060,7 @@ function makeFree () {
     var div = document.createElement('div');
     div.classList.add ('removeFigureButton');
     div.innerHTML = '<i class="material-icons">close</i>';
-    // in iOS, remove is handled by touchstart
-    if (!iosDragDropShim.enabled) {
-			div.addEventListener ('mousedown', handleFreeRemove);
-		}
+		div.addEventListener ('mousedown', handleFreeRemove);
     container.appendChild (div);
   }
   

@@ -1163,8 +1163,8 @@ var iosDragDropShim = { enableEnterLeave: true,
         new DragDrop(evt,el);
       } else if (iosDragDropShim.openaero) {
         if (el.classList.contains ('removeFigureButton')) {
+					// event handler is on button
           evt.preventDefault();
-          handleFreeRemove (evt, el);
           return false;
         } else if (el.classList.contains ('fuFigure') ||
           el.classList.contains ('fuFigureMulti') ||
@@ -1646,7 +1646,17 @@ function cordovaHandleIntent (intent) {	// intent.action android.intent.action.M
 					openFile (file, 'Sequence');
 				});
 			});
-		}, function(error) {alertBox (userText.saveDeviceFirst)});
+		}, function(error) {
+			if (platform.android) {
+				window.plugins.webintent.getUri(
+					function (uri) {
+				    if (uri.match (/^https:\/\/openaero.net\/\?s=/)) {
+							launchURL ({url : uri});
+						} else alertBox (userText.saveDeviceFirst);
+					}
+				);
+			} else alertBox (userText.saveDeviceFirst);
+		});
 	} /*else {
 		window.FilePath.resolveNativePath(intent.clipItems[0].uri, function(path) {
 			console.log(path);
@@ -2398,8 +2408,9 @@ function newWindow (body, title) {
 function aboutDialog () {
   function show (stableVersion) {
     var compText = '';
-    if (stableVersion === '-') {
+    if (!stableVersion) {
       compText = userText.aboutUnknown;
+      stableVersion = '-';
     } else {
       switch (compVersion (version, stableVersion)) {
         case -1:
@@ -2428,6 +2439,8 @@ function aboutDialog () {
       userText.about);
   }
   
+  getStableVersion (show);
+  /**
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', 'https://openaero.net/openaero.php?v', true);
 	xhr.timeout = 5000;
@@ -2435,8 +2448,9 @@ function aboutDialog () {
 		show (xhr.response);
 	}
   // onerror or ontimeout will be triggered when offline
-  xhr.onerror = xhr.ontimeout = function() {show ('-');};
+  xhr.onerror = xhr.ontimeout = function() {show (false);};
 	xhr.send();
+	*/
 }
 
 /** End dialogs and windows */
@@ -5266,7 +5280,8 @@ function addEventListeners () {
   // drop any dragged object when releasing mouse anywhere
   if (platform.touch) {
     window.addEventListener ('touchend', Drop);    
-  } else window.addEventListener ('mouseup', Drop);
+  }
+  window.addEventListener ('mouseup', Drop);
   
   // menu
   document.getElementById('hamburgerMenu').addEventListener ('mousedown', menuActive);
@@ -5354,10 +5369,10 @@ function addEventListeners () {
   if (platform.touch) {
     document.getElementById('gridInfo').addEventListener ('touchstart', grabFigure);
     document.getElementById('gridInfo').addEventListener ('touchmove', Drag);
-  } else {
-	  document.getElementById('gridInfo').addEventListener ('mousedown', grabFigure);
-	  document.getElementById('gridInfo').addEventListener ('mousemove', Drag);
-	}
+  }
+  document.getElementById('gridInfo').addEventListener ('mousedown', grabFigure);
+  document.getElementById('gridInfo').addEventListener ('mousemove', Drag);
+  
   document.getElementById('gridColumns').addEventListener('change', updateGridColumns);
   document.getElementById('gridOrderBy').addEventListener('change', function(){selectForm('Grid');});
   document.getElementById('manual_html_grid_system').addEventListener('mousedown', function(){
@@ -6919,7 +6934,12 @@ function updateFigureOptions (figureId) {
       el.classList.add ('disable');
     }
     // set switchX
-    var el = document.getElementById('switchX');
+    /** Need to improve this
+    if (f.entryAxisFormB) {
+			var el = document.getElementById('switchY');
+		} else var el = document.getElementById('switchX');
+		*/
+		var el = document.getElementById('switchX');
     //el.classList.remove ('disable');
     if (f.switchX) {
       el.classList.add ('on');
@@ -6935,7 +6955,12 @@ function updateFigureOptions (figureId) {
       el.classList.add ('disableFUfig');
     }
     // set switchY
-    var el = document.getElementById('switchY');
+    /** Need to improve this
+    if (f.entryAxisFormB) {
+			var el = document.getElementById('switchX');
+		} else var el = document.getElementById('switchY');
+		*/
+		var el = document.getElementById('switchY');
     //el.classList.remove ('disable');
     if (f.switchY) {
       el.classList.add ('on');
@@ -7645,23 +7670,43 @@ function latestVersion() {
     // Check for appcache when using http
     if (window.applicationCache) window.applicationCache.update();
   } else {
-		// check for update on non-http(s)
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'https://openaero.net/openaero.php?v', true);
-    xhr.onload = function() {
-      if (compVersion (version, xhr.response) == -1) {
+		getStableVersion (function(latestVersion) {
+			if (compVersion (version, latestVersion) == -1) {
 				var banner = document.getElementById('installApp');
 				banner.classList.remove ('noDisplay');
 				document.getElementById('t_getTheApp').innerHTML =
-					sprintf(userText.updateApp, xhr.response);
+					sprintf(userText.updateApp, latestVersion);
 				if (platform.android) banner.classList.add ('android');
 				if (platform.ios) banner.classList.add ('ios');
 				banner.classList.add ('update');
 				banner.classList.add ('show');
 			}
-		};
-    xhr.send();
+		});
   }
+}
+
+// getStableVersion returns whichever version is currently on
+// openaero.net or the iOS app store. Function f is
+// executed when version is loaded
+function getStableVersion (f) {
+	
+	if (platform.cordova && platform.ios) {
+		window.AppUpdate.checkAppUpdate(
+			function(latestVersion){
+				f (latestVersion);
+			},
+			function(fail){
+				f (false);
+			}, 'OpenAero', {}
+		);
+	} else {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://openaero.net/openaero.php?v', true);
+    xhr.timeout = 5000;
+    xhr.onload = function(){f (xhr.response)};
+    xhr.onerror = xhr.ontimeout = function() {f (false)};
+    xhr.send();
+	}
 }
 
 // preventUnload is used to set a question asking the user if he wants
@@ -8031,9 +8076,9 @@ function highlight (el, start, end) {
 		range = saveSelection(el);
 
 	if (end) {
-		var newHTML = text.substr (0, start) +
+		var newHTML = (text.substr (0, start) +
 			'<span class="highlight">' + text.substr (start, (end - start)) +
-			'</span>' + text.substr (end);
+			'</span>' + text.substr (end)).replace (/(\r\n|\n|\r)/gm, '');
 		if (el.innerHTML !== newHTML) el.innerHTML = newHTML;
 		var span = el.getElementsByClassName ('highlight')[0];
 		el.scrollTop = parseInt(span.getBoundingClientRect().top -
@@ -9359,53 +9404,56 @@ function checkRules () {
                 forElement = userText.forElement + ruleSplit[1];
               }
               // Apply conversions to the Aresti number before checking the rule
-              if (checkRule[rule].conv) {
-                var conversion = checkRule[rule].conv;
-                log.push ('Apply: ' + checkRule[rule].conv);
-                logLine = 'Converted: ' + check.join('') + ' => ';
-                for (var l = 0; l < checkConv[conversion].length; l++) {
-                  for (var m = 0; m < check.length; m++) {
-                    if (!check[m].match(/[ ,;]/)) {
-                      check[m] = check[m].replace(checkConv[conversion][l].regex,
-                      checkConv[conversion][l].replace);
-                    }
-                  }
-                }
-                checkLine = check.join('');
-
-                log.push (logLine + checkLine);
-              }
-              if (checkRule[rule].regex) {
-                if (checkLine.match(checkRule[rule].regex)) {
-                  checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
-                  log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
-                }
-              } else if (checkRule[rule].less) {
-                var sum = 0;
-                for (var l = check.length - 1; l >= 0; l--) {
-                  if (check[l].match(/^[0-9]/)) {
-                    sum += parseInt (check[l]);
-                  }
-                  if ((check[l] == ' ') || (l == 0)) {
-                    if (sum >= parseInt (checkRule[rule].less)) {
-                      checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
-                      log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
-                    }
-                    sum = 0;
-                  }
-                }
-              } else if (checkRule[rule].totalLess) {
-                var sum = 0;
-                for (var l = check.length - 1; l >= 0; l--) {
-                  if (check[l].match(/^[0-9]/)) {
-                    sum += parseInt (check[l]);
-                  }
-                }
-                if (sum >= parseInt (checkRule[rule].totalLess)) {
-                  checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
-                  log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
-                }
-              }
+              if (checkRule[rule]) { // make sure rule was defined
+	              if (checkRule[rule].conv) {
+	                var conversion = checkRule[rule].conv;
+	                log.push ('Apply: ' + checkRule[rule].conv);
+	                logLine = 'Converted: ' + check.join('') + ' => ';
+	                for (var l = 0; l < checkConv[conversion].length; l++) {
+	                  for (var m = 0; m < check.length; m++) {
+	                    if (!check[m].match(/[ ,;]/)) {
+	                      check[m] = check[m].replace(checkConv[conversion][l].regex,
+	                      checkConv[conversion][l].replace);
+	                    }
+	                  }
+	                }
+	                checkLine = check.join('');
+	
+	                log.push (logLine + checkLine);
+	              }
+	              if (checkRule[rule].regex) {
+	                if (checkLine.match(checkRule[rule].regex)) {
+	                  checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
+	                  log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
+	                }
+	              } else if (checkRule[rule].less) {
+	                var sum = 0;
+	                for (var l = check.length - 1; l >= 0; l--) {
+	                  if (check[l].match(/^[0-9]/)) {
+	                    sum += parseInt (check[l]);
+	                  }
+	                  if ((check[l] == ' ') || (l == 0)) {
+	                    if (sum >= parseInt (checkRule[rule].less)) {
+	                      checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
+	                      log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
+	                    }
+	                    sum = 0;
+	                  }
+	                }
+	              } else if (checkRule[rule].totalLess) {
+	                var sum = 0;
+	                for (var l = check.length - 1; l >= 0; l--) {
+	                  if (check[l].match(/^[0-9]/)) {
+	                    sum += parseInt (check[l]);
+	                  }
+	                }
+	                if (sum >= parseInt (checkRule[rule].totalLess)) {
+	                  checkAlert (why(rule) + forElement, 'rule', figNr, checkRule[rule].rule);
+	                  log.push ('*** Error: Fig ' + figNr + ': ' + checkRule[rule].why + forElement);
+	                }
+	              }
+							} else console.log ("Referenced rule \"" + rule +
+								"\" does not exist");
               
             }
             // Check default rules when applicable
@@ -10406,9 +10454,8 @@ function changeFigureGroup() {
           // which fires before mousedown
           if (platform.touch) {
             div.addEventListener ('touchstart', removeFromQueue);
-          } else {
-	          div.addEventListener ('mousedown', removeFromQueue);
-					}
+          }
+          div.addEventListener ('mousedown', removeFromQueue);
           inner.appendChild(div);
           // add the unknownFigureLetter where defined
           if (fig[i].unknownFigureLetter) {
@@ -11187,6 +11234,8 @@ function grabFigure(evt) {
   // disable when sequence locked
   if (document.getElementById ('lock_sequence').value) return;
   
+  // do not preventDefault as gridInfo may need inside clicks!
+  
   // Put the coordinates of object evt in TrueCoords global.
   if (evt.changedTouches && evt.changedTouches[0] && ('pageX' in evt.changedTouches[0])) {
     TrueCoords.x = evt.changedTouches[0].pageX;
@@ -11319,8 +11368,8 @@ function grabFigure(evt) {
     //    2) allows us to find out where the dragged element is dropped (see Drop)
     dragTarget.setAttribute('pointer-events', 'none');
 
-    // enlarge svg to cover top and left
-    if (!platform.smallMobile) {
+    // enlarge svg to cover top and left, except on smallMobile and Grid
+    if (!platform.smallMobile && !(activeForm === 'Grid')) {
       var svgRect = svg.getBoundingClientRect();
       var w = parseInt(viewBox[2]) + parseInt(svgRect.left) +
 	      parseInt(dragTarget.scrollLeftSave);
@@ -11492,6 +11541,8 @@ function Drag (evt) {
 
   if (!dragTarget) return;
   
+  evt.preventDefault(); // prevent default dag & drop and scrolling on touch devices
+  
   // don't drag figures when in grid view
   if ((activeForm === 'Grid') && !dragTarget.classList.contains  ('draggablePanel')) return;
   
@@ -11508,7 +11559,7 @@ function Drag (evt) {
   if (dragTarget) {
     
     // prevent scrolling on touch devices
-    if (platform.touch) evt.preventDefault();
+    // if (platform.touch) evt.preventDefault();
     
     // find out what we are dragging
     if (dragTarget.id.match (/-handle$/)) {
@@ -11725,7 +11776,6 @@ function Drop(evt) {
   }
 
 	document.getElementById('main').style.top = '';
-  //if (platform.touch) evt.preventDefault();
 
   // turn the pointer-events back on, so we can grab this item later
   dragTarget.setAttribute('pointer-events', 'all');
@@ -11783,8 +11833,6 @@ function Drop(evt) {
   // set the global variable to null, so nothing will be dragged until
   // we grab the next element
   dragTarget = null;
-
-  //if (!platform.touch) sequenceText.focus();
 
 }
 
@@ -12800,7 +12848,7 @@ function buildFuFiguresTab() {
       // When fu_figures has a value, the strings were already converted
       if ((fu_figures.value == '') && f.entryAxis == 'Y') {
         string = string.replace(regexSwitchDirY, '#').
-	        replace(regegSwitchDirX, userpat.switchDirY).
+	        replace(regexSwitchDirX, userpat.switchDirY).
 	        replace(/#/g, userpat.switchDirX);
       }
       // Handle the very special case where there's only an upright or
@@ -13197,7 +13245,9 @@ function makeFormGrid (cols, width, svg) {
   // draw all real figures, ordered as selected
 	var orderBy = document.getElementById('gridOrderBy').value;
 	for (var i = 0; i < figures.length; i++) {
-    if (figures[i].aresti) sortFigures.push ({id: i, orderBy: figures[i][orderBy]});
+    if (figures[i].aresti) {
+			sortFigures.push ({id: i, orderBy: figures[i][orderBy]});
+		}
 	}
 
 	if (orderBy !== 'seqNr') {
@@ -13954,10 +14004,7 @@ function makeFree () {
     var div = document.createElement('div');
     div.classList.add ('removeFigureButton');
     div.innerHTML = '<i class="material-icons">close</i>';
-    // in iOS, remove is handled by touchstart
-    if (!iosDragDropShim.enabled) {
-			div.addEventListener ('mousedown', handleFreeRemove);
-		}
+		div.addEventListener ('mousedown', handleFreeRemove);
     container.appendChild (div);
   }
   
@@ -14352,6 +14399,7 @@ function releaseVirtualKeyboard(e) {
 
 // updateSequenceText updates the sequence text and keeps caret location
 function updateSequenceText (string) {
+
   if (document.activeElement === sequenceText) {
 		// focussed, maintain caret position
 		
@@ -14365,8 +14413,9 @@ function updateSequenceText (string) {
 	  // put caret back in correct place
 		var range = document.createRange();
 		var sel = window.getSelection();
-		range.setStart(sequenceText.childNodes[0], selStart);
-		range.setEnd(sequenceText.childNodes[0], selEnd);
+
+		range.setStart(sequenceText.firstChild, selStart);
+		range.setEnd(sequenceText.firstChild, selEnd);
 		sel.removeAllRanges();
 		sel.addRange(range);
 	} else {
@@ -14379,7 +14428,7 @@ function updateSequenceText (string) {
 // When force is set to true (e.g. after drag & drop) redraw will always
 // be done
 function checkSequenceChanged (force) {
-
+	
 	var
 		selStart = 0,
 		selEnd = 0;
@@ -15864,7 +15913,8 @@ function printForms () {
 	// Print the constructed pages. For the Chrome App an asynchronous callback
 	// is used. For the web version we work synchronous but use
 	// setTimeout to prevent browser blocking.
-	if (chromeApp.active) {
+	/** DISABLED TO USE THE REGULAR INLINE PRINT */
+	if (false && chromeApp.active) {
 		chrome.app.window.create ('print.html', {
 			bounds: {
 				width: 800,
@@ -15891,9 +15941,8 @@ function printForms () {
 				win.document.body = buildForms (win);
 				win.document.head.appendChild(style);
 				if (win.matchMedia) {
-					var mediaQueryList = win.matchMedia ('print');
-					mediaQueryList.addListener (function (mql) {
-						if (!mql.matches) win.close();
+					win.matchMedia ('screen').addListener (function (mql) {
+						if (mql.matches) win.close();
 					});
 				}
 				win.print();
@@ -15908,8 +15957,8 @@ function printForms () {
 	          document.getElementById ('marginRight').value + 'mm ' +
 	          document.getElementById ('marginBottom').value + 'mm ' +
 	          document.getElementById ('marginLeft').value + 'mm}' +
-	          'html {height: 100%;}' +
-	          'body {margin: 0; height: 100%;}' +
+	          'html {height: 100%; overflow: initial;}' +
+	          'body {margin: 0; height: 100%; overflow: initial;}' +
 	          '.noPrint {display: none;}' +
 	          '#noScreen {height: 100%;}' +
 	          '.breakAfter {position: relative; display:block; ' +
@@ -15941,6 +15990,7 @@ function printForms () {
 				} else {
 					window.print();				
 				}
+
 				// restore title
 				changeSequenceInfo();
 	    }, wait);
@@ -15951,19 +16001,20 @@ function printForms () {
 // win=true, a body is created in window win and returned (for print).
 // Otherwise an SVG holding the forms is returned.
 function buildForms (win) {
-  var pages = ['A', 'B', 'C', 'R', 'L', 'PilotCards', 'Grid'];
-  iacForms = document.getElementById('iacForms').checked;
-  var activeFormSave = activeForm;
-  var svg = '';
-  var translateY = 0;
-  // save the miniFormA value and set miniFormA depending on checkbox
-  var miniFormASave = miniFormA;
-  // save the Sequence Notes check
-  var sequenceNotesSave = document.getElementById('printNotes').checked;
-  // save the current logo
-  var logoSave = document.getElementById('logo').value;
+  var
+	  pages = ['A', 'B', 'C', 'R', 'L', 'PilotCards', 'Grid'];
+		activeFormSave = activeForm,
+	  svg = '',
+	  translateY = 0,
+	  // save the miniFormA value and set miniFormA depending on checkbox
+	  miniFormASave = miniFormA,
+	  // save the Sequence Notes check
+	  sequenceNotesSave = document.getElementById('printNotes').checked,
+	  // save the current logo
+	  logoSave = document.getElementById('logo').value, 
+	  fname = activeFileName() || 'sequence';
   
-  var fname = activeFileName() || 'sequence';
+  iacForms = document.getElementById('iacForms').checked;
 
   // make sure no figure is selected
   selectFigure (false);
@@ -16978,7 +17029,9 @@ function addFormElementsGrid (svg) {
 	if (document.getElementById ('formGridHeader').checked) {
 		var children = svg.childNodes;
 		for (var i = 0; i < children.length; i++) {
-			children[i].setAttribute('transform', 'translate(0,140)');
+			children[i].setAttribute('transform',
+				'translate(0,140) ' +
+				(children[i].getAttribute('transform') || ''));
 		}
 	
 		var logoWidth = 0;
@@ -16989,7 +17042,7 @@ function addFormElementsGrid (svg) {
 		}
 		drawText (document.getElementById('location').value + ' ' +
 			document.getElementById('date').value,
-			logoWidth, 24, 'formATextHuge', 'start', '', svg);
+			logoWidth, 32, 'formATextHuge', 'start', '', svg);
 		// scale down if needed
 		var scale = roundTwo ((800 - logoWidth) / svg.lastChild.getBBox().width);
 		if (scale < 1) {
@@ -19217,7 +19270,8 @@ function parseSequence () {
   for (var i = 0; i < figures.length; i++) {
     // make sure all paths are empty
     figures[i].paths = [];
-    
+
+    figure = figures[i].string;    
     // always start figure LTR for Figures in grid view. But this means
     // we have to correct direction switchers if the figure would start
     // on Y axis on Form B
@@ -19226,15 +19280,13 @@ function parseSequence () {
       if (formBDirection >= 360) formBDirection -= 360;
       if ((formBDirection === 90) || (formBDirection === 270)) {
         // switch > and ^. Use temporary placeholder #
-        figures[i].string = figures[i].string.replace(regexSwitchDirY, '#').
+        figure = figures[i].string.replace(regexSwitchDirY, '#').
 			    replace(regexSwitchDirX, userpat.switchDirY).
 			    replace(/#/g, userpat.switchDirX);
         figures[i].entryAxisFormB = 'Y';
       }
       Direction = (Attitude == 0) ? 0 : 180;
     }
-
-    figure = figures[i].string;
 
     // See if there is a y-axis flip symbol and activate it, except when 
     // - it matches the subSequence code which is similar (/ or //)

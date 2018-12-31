@@ -36,7 +36,7 @@
 // Where a new x should be used for versions that create sequences not
 // fully backward compatible with the previous version
 
-var version = '2018.4';
+var version = '2019.1.3';
 /* versionNew is an object that contains version update information
    The structure is {vvv : [[ttt, n], ...], ...} , where
    vvv = version number
@@ -44,6 +44,15 @@ var version = '2018.4';
    n   = importance (higher = more important)
 */
 var versionNew = {
+	'2019.1.3' : [
+		['Improved roll selection to only show allowed rolls from rules and/or Aresti', 3]
+	],
+	'2019.1.2' : [
+		['Updated CIVA form layouts', 2]
+	],
+	'2019.1' : [
+		['CIVA rules and Free Known sequences for 2019', 4]
+	],
 	'2018.4' : [
 		['Added saving of sequences to PDF on iOS app', 3]
 	],
@@ -519,7 +528,7 @@ for (var i = 2; i < 9; i++) {
 var posFlickTypes = [
   '2f:1/2 pos flick',
   '3f:3/4 pos flick',
-  'f:1 pos flick',
+  '1f:1 pos flick',
   '5f:1 1/4 pos flick',
   '6f:1 1/2 pos flick',
   '7f:1 3/4 pos flick',
@@ -527,19 +536,19 @@ var posFlickTypes = [
 var negFlickTypes = [
   '2if:1/2 neg flick',
   '3if:3/4 neg flick',
-  'if:1 neg flick',
+  '1if:1 neg flick',
   '5if:1 1/4 neg flick',
   '6if:1 1/2 neg flick',
   '7if:1 3/4 neg flick',
   '9if:2 neg flick'];
 var posSpinTypes = [
-  's:1 pos spin',
+  '1s:1 pos spin',
   '5s:1 1/4 pos spin',
   '6s:1 1/2 pos spin',
   '7s:1 3/4 pos spin',
   '9s:2 pos spin'];
 var negSpinTypes = [
-  'is:1 neg spin',
+  '1is:1 neg spin',
   '5is:1 1/4 neg spin',
   '6is:1 1/2 neg spin',
   '7is:1 3/4 neg spin',
@@ -677,49 +686,49 @@ var
 		figpat.spinroll + ']', 'g'),
 	regexRollsAndLines = new RegExp ('[\\' + figpat.halfroll + '\\' +
 		  figpat.fullroll + '\\' + figpat.anyroll + '\\' +
-		  figpat.spinroll + '\\' + figpat.longforward + ']');
+		  figpat.spinroll + '\\' + figpat.longforward + ']'),
 	regexTurnsAndRolls = new RegExp ('[\\d\\(\\)\\' + figpat.halfroll +
 		'\\' + figpat.fullroll + '\\' + figpat.anyroll + '\\' +
-		figpat.spinroll + '\\' + figpat.longforward + ']+', 'g'); // /[\d\(\)_\^\&\$\~]+/g
+		figpat.spinroll + '\\' + figpat.longforward + ']+', 'g'), // /[\d\(\)_\^\&\$\~]+/g
 	
-// also accept deprecated 'connectors' for additional figures
-var regexRulesAdditionals = /^(connectors|additionals)=([0-9]+)\/([0-9]+)/;
-var regexSequenceOptions = /^(ed|eu|ej|eja|\/\/)$/;
-var regexTextBlock = /^"[^"]*"$/;
-var regexUnlinkedRolls = /[,; ](9\.[1-8]\.[0-9.]*;9\.[1-8]\.)|(9\.(9|10)\.[0-9.]*;9\.(9|10))|(9\.1[12]\.[0-9.]*;9\.1[12])/;
-
-/* Define entry/exit speeds of figures as follows:
-* L for all descending entries and climbing exits
-* H for all climbing entries and all descending exits
-* N for all others
-*/
-var regexSpeedConv = {
-  'v' : /d?[vzmcpro]|dd|d\^[DVZMCPRO]/g,
-  'V' : /D?[VZMCPRO]|DD|D\^[dvzmcpro]/g
-}
-var regexSpeed = {
-  glider: {
-    entry: {
-      L : /^(\+([DV]|\^[dv])|-([dv]|\^[DV]))/,
-      H : /^(\+([dv]|\^[DV])|-([DV]|\^[dv]))/
-    },
-    exit: {
-      L : /(([DV]|[dv]\^)\+)|(([dv]|[DV]\^)-)$/,
-      H : /(([dv]|[DV]\^)\+)|(([DV]|[dv]\^)-)$/
-    }
-  },
-  power: {
-    entry: {
-      L : /^(\+([DV]|\^[dv])|-([dv]|\^[DV]))/,
-      H : /^(\+([dv]|\^[DV])|-([DV]|\^[dv]))/
-    },
-    exit: {
-      L : /(([DV]|[dv]\^)\+)|(([dv]|[DV]\^)-)$/,
-      H : /(([dv]|[DV]\^)\+)|(([DV]|[dv]\^)-)$/
-    }
-  }
-};
-
+	// also accept deprecated 'connectors' for additional figures
+	regexRulesAdditionals = /^(connectors|additionals)=([0-9]+)\/([0-9]+)/,
+	regexSequenceOptions = /^(ed|eu|ej|eja|\/\/)$/,
+	regexTextBlock = /^"[^"]*"$/,
+	regexUnlinkedRolls = /[,; ](9\.[1-8]\.[0-9.]*;9\.[1-8]\.)|(9\.(9|10)\.[0-9.]*;9\.(9|10))|(9\.1[12]\.[0-9.]*;9\.1[12])/,
+	
+	/* Define entry/exit speeds of figures as follows:
+	* L for all descending entries and climbing exits
+	* H for all climbing entries and all descending exits
+	* N for all others
+	*/
+	regexSpeedConv = {
+	  'v' : /d?[vzmcpro]|dd|d\^[DVZMCPRO]/g,
+	  'V' : /D?[VZMCPRO]|DD|D\^[dvzmcpro]/g
+	},
+	regexSpeed = {
+	  glider: {
+	    entry: {
+	      L : /^(\+([DV]|\^[dv])|-([dv]|\^[DV]))/,
+	      H : /^(\+([dv]|\^[DV])|-([DV]|\^[dv]))/
+	    },
+	    exit: {
+	      L : /(([DV]|[dv]\^)\+)|(([dv]|[DV]\^)-)$/,
+	      H : /(([dv]|[DV]\^)\+)|(([DV]|[dv]\^)-)$/
+	    }
+	  },
+	  power: {
+	    entry: {
+	      L : /^(\+([DV]|\^[dv])|-([dv]|\^[DV]))/,
+	      H : /^(\+([dv]|\^[DV])|-([DV]|\^[dv]))/
+	    },
+	    exit: {
+	      L : /(([DV]|[dv]\^)\+)|(([dv]|[DV]\^)-)$/,
+	      H : /(([dv]|[DV]\^)\+)|(([DV]|[dv]\^)-)$/
+	    }
+	  }
+	};
+	
 /* optionally, count 45 only as N. However, as this is decided on base
  * figure level, there is no way to differentiate e.g. 45 up with 4x4
  * which is clearly a H
@@ -736,6 +745,8 @@ var regexSpeed = {
   }
 
  */
+  
+  /** end regex definitions */
   
 /**********************************************************************
  * 

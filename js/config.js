@@ -33,10 +33,10 @@
 // **************
 // Define active version number of OpenAero
 // It is of format yyyy.x.z
-// Where a new x should be used for versions that create sequences not
+// A new x should be used for versions that create sequences not
 // fully backward compatible with the previous version
 
-var version = '2019.1.3';
+var version = '2019.2.2';
 /* versionNew is an object that contains version update information
    The structure is {vvv : [[ttt, n], ...], ...} , where
    vvv = version number
@@ -44,8 +44,27 @@ var version = '2019.1.3';
    n   = importance (higher = more important)
 */
 var versionNew = {
+	'2019.2.1' : [
+		['Updated NZAC Power rules and sequences for 2019/2020', 3]
+	],
+	'2019.2' : [
+		['Corrected notation of figures 1.2.11.x and 1.2.12.x as their ' +
+		'exit attitude notation was swapped. Sequences made with older ' +
+		'OpenAero versions will be automatically corrected when loaded ' +
+		'from file or sequence link.', 3]
+	],
+	'2019.1.7' : [
+		['Added AAC Power Known sequences, rules and logo for 2019', 2]
+	],
+	'2019.1.5' : [
+		['Added IAC Power and Glider Known sequences for 2019', 3]
+	],
+	'2019.1.4' : [
+		['Updated IAC K factors for Presentation', 2],
+		['Added 2019 BAeA and VINK Club and Sports Known sequences', 2],
+	],
 	'2019.1.3' : [
-		['Improved roll selection to only show allowed rolls from rules and/or Aresti', 3]
+		['Improved roll selection to only show allowed rolls from rules and/or Aresti', 4]
 	],
 	'2019.1.2' : [
 		['Updated CIVA form layouts', 2]

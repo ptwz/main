@@ -1,3 +1,50 @@
+2019.2.2
+* added camera plugin and usage explanations for Cordova iOS
+
+2019.2.1
+* clear filename when loading sequence from url
+* updated 2020 NZAC sequences and rules
+* fixed issue that caused failed restart when in the process of using Designer
+
+2019.2
+* corrected notation of figures 1.2.11.x and 1.2.12.x as their exit attitude notation was swapped
+* moved rule loading and checking to separate Worker for improved performance and extendability
+* included sprintf.js in main.js and rulesWorker.js
+* removed Alert displaying from draw routine as this is handled elsewhere
+* fixed Alert sorting for complete figure number, not just the first digit
+* "Check multiple sequences" now also shows in alertBox on Chrome app
+* "Check sequences" in multi dialog disabled when no sequences in list
+* improved code for changing figure K through rules
+* moved all OLAN (antique...) corrections to a single OLAN variable
+* removed Chrome # anchor bug fix, is now fixed in Chrome browser
+* added automatic selection and 'Copy to clipboard' for sequence check log windows
+* fixed bug in cookie detection to enable running without cookies
+* fixed issue that made it possible to still select a figure that was hidden because of rules
+* fixed issue that caused printing to fail with Pilot Cards selected after Free Unknown Designer was used 
+ 
+2019.1.7
+* updated AAC logo
+* added AAC rules for 2019
+* added AAC sequences for 2019
+* fixed issue of logo not updating in interface after rule change
+* added Svenska Konstflygförbundet logo
+
+2019.1.6
+* updated url sequence loading to clean url after sequence is loaded
+* moved parseRules earlier in loading to assure correct Library menu on mobile
+* added Federation of Aerobatics Sports of Russia logo
+* removed steganography as it's causing faillure of png generating
+* fixed loading of sequence links in Android app when app was already open
+
+2019.1.5
+* added IAC Power and Glider Known sequences for 2019
+
+2019.1.4
+* fixed issue with roll selection for Glider created in 2019.1.3
+* removed Glider K for 3x3. These have been non-Aresti for many years
+* updated IAC K factors for Presentation
+* added 2019 BAeA and VINK Club and Sports Known sequences
+
 2019.1.3
 * improved roll selection to only show allowed rolls from rules and/or Aresti
 * fixed issue with Chrome autocomplete on combo boxes in Sequence Info
